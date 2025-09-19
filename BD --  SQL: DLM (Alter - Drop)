@@ -1,0 +1,16 @@
+drop table funcionario;
+
+drop table e;
+
+alter table uh
+	add column valor decimal(6,2) unsigned zerofill not null;
+ 
+alter table uh
+	change column valor valorDiaria decimal(5,2) unsigned
+    not null;
+ 
+alter table uh
+	drop column valorDiaria;
+    
+alter table uh
+	add column valor decimal (6,2) unsigned not null after nome;
