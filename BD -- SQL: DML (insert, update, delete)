@@ -1,0 +1,50 @@
+insert into funcionario(cpf, nome, dataNasc, genero, estadoCivil,
+	email, carteiraTrab, cargaHoraria, salario, chavePix, `status`)
+    value ("345.543.44-55", "Danielle Barbosa",'1994-04-22',"Feminino","Casada","danibarbosa@gmil.com","321456",
+		 40, 2800, "danibarbosa@gmail.com",1),
+         
+         ("345.543.44-55", "Danielle Barbosa",'1994-04-22',"Feminino","Casada","danibarbosa@gmil.com","321456",
+		 40, 2800, "danibarbosa@gmail.com",1),
+         
+         ("345.543.44-55", "Danielle Barbosa",'1994-04-22',"Feminino","Casada","danibarbosa@gmil.com","321456",
+		 40, 2800, "danibarbosa@gmail.com",1),
+         
+         ("345.543.44-55", "Danielle Barbosa",'1994-04-22',"Feminino","Casada","danibarbosa@gmil.com","321456",
+		 40, 2800, "danibarbosa@gmail.com",1);
+         
+         insert into endereco
+			values ("345.543.44-55", "PE", "Paulista", "Conceição", "Rua direita", 326,
+					"Ap 201", "53429-321");
+                    
+ update funcionario
+	set salario = 3000
+		where cpf =  "345.534.44-55";
+ 
+ update funcionario
+	set salario = 5000, cargaHoraria = 44, fg = 1200
+		where cpf = "011.345.987-44";
+        
+update funcionario
+	set salario = salario * 1.1
+		where genero = "Feminino";
+        
+update funcionario
+	set salario = salario *1.05;
+            
+update funcionario
+	set fg = 200
+		where salario >= 1500 and salario <= 2500;
+
+update funcionario
+	set fg = 300
+		where salario between 1500 and  2500;
+        
+update funcionario 
+	set fg = 500
+     where nome like "%Barbosa" or nome like "Silva%";
+     
+delete from funcionario
+	where cpf = "033.741.852-96";
+	
+delete from funcionario
+	where salario < 4000;
