@@ -1,0 +1,45 @@
+-- SQL - DQL
+select * from funcionario;                                       -- SELECIONAR TABELA
+
+select nome "Funcionário", replace(replace(cpf,'.',''),'-','') as "CPF",       -- REPLACE TROCAR ALGO DE UM DADO POR OUTRA COISA , TIRAR PONTO DE CPF POR NADA
+replace(carteiraTrab, '-','') "Carteira de Trabalho",                          -- NOMEAR DADOS: AS.(colocar é boas práticas)
+chavePix "Chave Pix"
+, date_format(dataNasc,'%d/%m/%Y') as "Data de Nascimento"                     -- DATE_FORMAT : TROCAR DATA AMERICANA PRA BR, dias , mes , anos , %d,%m,%Y (Y maisculo)
+,upper( estadoCivil)"Estado Civil",                                            -- UCASE OU UPPER DEIXA EM CAIXA ALTA
+cidade "Cidade",                                                                -- acrescentei cidade
+ucase("Gênero"), concat( cargaHoraria, 'h')"Carga Horária",                    -- UCASE OU UPPER DEIXA EM CAIXA ALTA  -- CONCAT serve para juntar e transforma em string
+concat('R$ ',format(salario,2, 'de_DE'))"Salário"    -- CONCAT serve para juntar e transforma em string -- FORMAT (se por de_DE transforma no formato no formato brasileiro) e tambem serve para aumentar ou diminuir casas decimais
+    from funcionario
+    inner join endereco on funcionario_cpf = cpf   -- para chamar as cidades que sao do funcionarios relacionando as tabalas com o INNER JOIN( funcionario e endereco)
+	where cidade = "Recife" and bairro like "Boa%"    -- esse where para selecionar somente funcionarios que sao da cidade Recife e boa vista
+    -- where genero = "Feminino" and            -- where usar quando quiser um filtro (no caso somente feminino)  -- SO PODE USAR UM WHERE , POR ISSO TRANSFORMEI O OUTRO EM COMENTARIO
+	--	salario between 3000 and 5000        -- between é o entre , no caso eu peguei mulheres com salario entre 3000 e 5000
+   -- where estadoCivil like "Casad%" and         -- uso o % para chamar casado e casada , ele ira buscar casad e oq vinher depois tanto faz -- like é mais usado para algo semelhante , aproximado e o = é usado para achar algo exato
+	--		salario < 4000
+  -- where email like "%gmail.com"              -- para achar email que só é gmail         
+    -- where estadoCivil in ("Divorciada","Casada")  -- in é para usado para achar os dados especificos , no caso divorciada e casada
+		--	salario > 4000
+        order by nome;                                               -- ORDENAR POR...( DESC: descrente ordem)
+        
+select * from dependente;
+
+select nome"Dependente",    
+  timestampdiff(year, dataNasc, now())"Idade",  -- para saber a idade atual da pesssoa , usar esse comando para subtrair o ano de nascimento para o ano atual
+  replace(replace(cpf,'.',''),'-','') as "CPF",
+  upper(parentesco) "Parentesco"
+	from dependente
+		order by nome;
+        
+        
+select * from dependente;
+
+select dep.nome"Dependente",    
+  timestampdiff(year, dep.dataNasc, now ())"Idade",  
+  replace(replace(dep.cpf,'.',''),'-','') as "CPF",    -- botei dep. na frente doq era para referenciar o dependente e fun no que era pra refenciar os funcionarios
+  upper(dep.parentesco) "Parentesco",
+  fun.nome "Responsável"
+	from dependente dep, funcionaro fun -- para facilitar a digitação eu apelidei dependente por dep e funcionario por fun
+		inner join dep.funcionario_cpf on fun.cpf -- usei o where para liga os dependentes a funcionarios pelo cpf , para nao ter conflitos de pais pelo sobrenome e so ser usado como referencia o cpf
+        order by dep.nome;
+        
+        
