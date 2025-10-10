@@ -1,0 +1,95 @@
+-- funcionario ,cpf, email,telefone, cidade,ch,salario???
+USE pousadaalambique;
+ select func.nome "Funcionário", func.cpf "CPF",
+timestampdiff(year, func.dataNasc, now()) "Idade",
+func.email "E-mail",group_concat(tel.numero separator ',') "Telefone",endc.cidade "Cidade",
+concat(func.cargaHoraria, 'h') "Carga Horária",
+concat("R$", format(func.salario, 2, 'de_DE')) "Salário"
+ from funcionario func
+ inner join telefone tel on tel.funcionario_cpf = func.cpf
+ inner join endereco endc on endc.funcionario_cpf = func.cpf
+    group by func.cpf
+	order by func.nome;
+    
+select date_format(oi.dataHora, '%d/%m/%Y' - '%h:%i') "Data Ocorrência",
+ oi.gravidade"Gravidade", oi.descricao "Descrição", func.nome "Funcionário"
+	from ocorrenciaInterna oi
+		inner join funcionario func on func.cpf = oi.funcionario_cpf
+    order by oi.dataHora desc;
+    
+select fer.anoRef "Ano Referência", 
+date_format(fer.dataInicio, '%d/%m/%Y') "Data de inicio",
+ date_format(date_add(fer.dataInicio ,interval fer.qtdDias day), '%d/%m/%Y')"Data fim", -- date add ele divide o ano , mes , e dia , mas e preciso o fomart para ficar no nosso modelo
+fer.qtdDias "Quantidade de Dias",
+concat("R$", format(fer.valor, 2, 'de_DE'))"Valor",
+upper(fer.`status`) "Situação",
+func.nome "Funcionário"                                                         -- 
+from ferias fer
+inner join funcionario func on func.cpf = fer.funcionario_cpf
+		order by fer.anoRef desc;
+        
+select func.nome "Funcionário", 
+	replace(replace(func.cpf, '.', ''), '-', '') as "CPF", 
+    timestampdiff(year, func.dataNasc, now()) "Idade",
+    crg.nome "Cargo",
+    concat(func.cargaHoraria, 'h') "Carga Horária", 
+    concat("R$ ", format(func.salario, 2, 'de_DE')) "Salário",
+    dpt.nome "Departamento",  -- nomeamos departamento de dpt e ele ira aparecer Departamento
+    grt.nome "Gerente"
+	from funcionario func
+    inner join trabalhar trb on trb.funcionario_cpf = func.cpf
+    inner join cargo crg on crg.cbo = trb.cargo_cbo
+    inner join departamento dpt on dpt.idDepartamento = trb.Departamento_idDepartamento -- nao tem ligação direta entre funcionario e departamento por isso fazemos um inner join de funcionario trabalho e de trabalho para cargo
+    left join funcionario grt on grt.cpf = dpt.gerente_cpf -- usamos o left join no caso porque nem todo departamento tem gerente , o inner e quando sempre tera alguem e nao ficara em branco ,
+    -- o left podera vim valores em branco
+	 where trb.dataFim is null  -- para achar o cargo atual é so pegar as pessoas com vaga sem tempo de data fim porque é o atual , com isso usamos o "is" e o null para falar que nao tem data fim,
+     -- nao se usa = ou like so em oracle , no sql usamos o "is"
+        order by func.nome;
+        
+-- Funcionario,cpf, cargaHoraria, chavepix, auxCreche, salario, telefone
+use pousadaalambique;
+
+select func.nome "Funcionário", func.cpf "CPF",Crg.nome "Cargo",concat(func.cargaHoraria,'h') "CargoHorária", func.chavePix "Chave pix",
+concat("R$", format( coalesce(vac.auxCreche, 0), 2, 'de_DE')) "Auxílio Creche", -- 180 por filho menor que 7 menos / criado a nova tabela agora renomear ela e dale o raio /
+-- se usar coalesce os campos que forem null irão aparecer zero ao inves de null no relatorio
+concat( "R$", format(func.salario,1, 'de_DE')) "Salário",group_concat(tel.numero separator ', ') "Telefone"
+		from funcionario func
+        inner join  trabalhar trb on trb.Funcionario_CPF = func.CPF
+        inner join cargo crg on crg.CBO = trb.Cargo_CBO
+        inner join telefone tel on tel.Funcionario_CPF = func.cpf
+        left join vauxcreche vac on vac.Funcionario_CPF = func.CPF -- nem todo funcionario vai ter o auxilo creche por isso o left
+			where trb.dataFim is null and
+            func.salario >= (select avg(salario) from funcionario)
+            group by func.cpf, crg.CBO
+            order by func.nome;
+            
+
+            
+            
+create view vAuxCreche as                               --  criei uma nova tabela com nome vAuxCreche com esse select  usando creat view
+select Funcionario_CPF, count(cpf) * 180 "auxCreche"
+	from dependente
+		where timestampdiff(year, dataNasc, now()) < 7   -- somente dependetes com menos de 7 anos irão receber auxilio d 180 , tirei os que tem menos de 7 ans com timessatampdiff  pra saber quantos filhos com menos de 7 anos cda
+														-- cada funcionario tem e depois multipliquei por 180 para saber quanto cada um ira ganhar			
+			group by Funcionario_CPF;
+            
+            
+create view  vRelatorioRH as      -- POSSO NOMEAR UM RELATORIO INTEIRO COMO POR EXEMPLO vRelatorioRH
+select func.nome "Funcionário", func.cpf "CPF",Crg.nome "Cargo",concat(func.cargaHoraria,'h') "CargoHorária", func.chavePix "Chave pix",
+concat("R$", format( coalesce(vac.auxCreche, 0), 2, 'de_DE')) "Auxílio Creche", -- 180 por filho menor que 7 menos / criado a nova tabela agora renomear ela e dale o raio /
+-- se usar coalesce os campos que forem null irão aparecer zero ao inves de null no relatorio
+concat( "R$", format(func.salario,1, 'de_DE')) "Salário",group_concat(tel.numero separator ', ') "Telefone"
+		from funcionario func
+        inner join  trabalhar trb on trb.Funcionario_CPF = func.CPF
+        inner join cargo crg on crg.CBO = trb.Cargo_CBO
+        inner join telefone tel on tel.Funcionario_CPF = func.cpf
+        left join vauxcreche vac on vac.Funcionario_CPF = func.CPF -- nem todo funcionario vai ter o auxilo creche por isso o left
+		where trb.dataFim is null and
+         func.salario >= (select avg(salario) from funcionario) 
+		group by func.cpf, crg.CBO
+		order by func.nome;
+            
+select * from vRelatorioRH  -- e depois com o relatorio nomeado eu posso selecionar ele inteiro sem precisar repetir todos procedimentos
+    where `Salário` >= avg(`Salário`);
+    
+select avg(salario) from funcionario; -- avg serve para pegar a média no caso do salario   
