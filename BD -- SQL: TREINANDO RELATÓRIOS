@@ -1,51 +1,3 @@
--- funcionario ,cpf, email,telefone, cidade,ch,salario???
-USE pousadaalambique;
- select func.nome "Funcionário", func.cpf "CPF",
-timestampdiff(year, func.dataNasc, now()) "Idade",
-func.email "E-mail",group_concat(tel.numero separator ',') "Telefone",endc.cidade "Cidade",
-concat(func.cargaHoraria, 'h') "Carga Horária",
-concat("R$", format(func.salario, 2, 'de_DE')) "Salário"
- from funcionario func
- inner join telefone tel on tel.funcionario_cpf = func.cpf
- inner join endereco endc on endc.funcionario_cpf = func.cpf
-    group by func.cpf
-	order by func.nome;
-    
-select date_format(oi.dataHora, '%d/%m/%Y' - '%h:%i') "Data Ocorrência",
- oi.gravidade"Gravidade", oi.descricao "Descrição", func.nome "Funcionário"
-	from ocorrenciaInterna oi
-		inner join funcionario func on func.cpf = oi.funcionario_cpf
-    order by oi.dataHora desc;
-    
-select fer.anoRef "Ano Referência", 
-date_format(fer.dataInicio, '%d/%m/%Y') "Data de inicio",
- date_format(date_add(fer.dataInicio ,interval fer.qtdDias day), '%d/%m/%Y')"Data fim", -- date add ele divide o ano , mes , e dia , mas e preciso o fomart para ficar no nosso modelo
-fer.qtdDias "Quantidade de Dias",
-concat("R$", format(fer.valor, 2, 'de_DE'))"Valor",
-upper(fer.`status`) "Situação",
-func.nome "Funcionário"                                                         -- 
-from ferias fer
-inner join funcionario func on func.cpf = fer.funcionario_cpf
-		order by fer.anoRef desc;
-        
-select func.nome "Funcionário", 
-	replace(replace(func.cpf, '.', ''), '-', '') as "CPF", 
-    timestampdiff(year, func.dataNasc, now()) "Idade",
-    crg.nome "Cargo",
-    concat(func.cargaHoraria, 'h') "Carga Horária", 
-    concat("R$ ", format(func.salario, 2, 'de_DE')) "Salário",
-    dpt.nome "Departamento",  -- nomeamos departamento de dpt e ele ira aparecer Departamento
-    grt.nome "Gerente"
-	from funcionario func
-    inner join trabalhar trb on trb.funcionario_cpf = func.cpf
-    inner join cargo crg on crg.cbo = trb.cargo_cbo
-    inner join departamento dpt on dpt.idDepartamento = trb.Departamento_idDepartamento -- nao tem ligação direta entre funcionario e departamento por isso fazemos um inner join de funcionario trabalho e de trabalho para cargo
-    left join funcionario grt on grt.cpf = dpt.gerente_cpf -- usamos o left join no caso porque nem todo departamento tem gerente , o inner e quando sempre tera alguem e nao ficara em branco ,
-    -- o left podera vim valores em branco
-	 where trb.dataFim is null  -- para achar o cargo atual é so pegar as pessoas com vaga sem tempo de data fim porque é o atual , com isso usamos o "is" e o null para falar que nao tem data fim,
-     -- nao se usa = ou like so em oracle , no sql usamos o "is"
-        order by func.nome;
-        
 -- Funcionario,cpf, cargaHoraria, chavepix, auxCreche, salario, telefone
 use pousadaalambique;
 
@@ -93,3 +45,13 @@ select * from vRelatorioRH  -- e depois com o relatorio nomeado eu posso selecio
     where `Salário` >= avg(`Salário`);
     
 select avg(salario) from funcionario; -- avg serve para pegar a média no caso do salario   
+
+select dep.nome "Departamento", -- relatorio mostrando quando se gasta em cada departamento
+	concat("R$", format(sum(func.salario), 2, 'de_DE')) "Custo Salarial", -- sum serve para somar e count serve para contar
+    count(func.cpf) "Quantidade de Funcionário",  -- count para contar quantos funcionarios ha no departamento
+    concat("R$ ",format(avg(func.salario), 2, 'de_DE')) "Media Salarial" -- avg para conseguir a media salarial ja concatenada e formatada
+    from  departamento dep
+    left join trabalhar trb on trb.Departamento_idDepartamento = dep.IdDepartamento
+    inner join funcionario func on func.CPF = trb.Funcionario_CPF
+		group by dep.IdDepartamento
+        order by sum(func.salario) desc;
