@@ -1,0 +1,103 @@
+USE pousadaalambique
+delimiter $$ -- usado porque pode ter mais de um ponto e virgula , para ele nao acabar a função no primeiro ponto e virgula
+create function calcValeTransporte(pCPF varchar(14)) -- Função para vale transporte /isso ja faz ele puxar os dados da função no cpf no caso, "p" de parametro
+returns decimal(5,2) deterministic -- decimal porque a função retornar um valor decimal com 5,2 porque pode ter ate 3 digitos antes da virgula 5 digitos e  2 depois da virgula, deterministic   significa que o retorno é determinado pelo dado de entrada no caso o cpf
+begin -- começo
+	declare precoPassagem decimal(4,2) default 4.3;
+    declare pCidade varchar(45);
+    declare pSalario decimal(7,2);
+    declare vt decunak(5,2);
+    
+    select salario  into pSalario -- quando fazemos um into no select nos guardamos o valor nesse into(valor do salario no caso), no caso foi colocado pSalario para diferenciar de salario e nao ficar "salario into salario"
+		from funcionario
+			where cpf = pCPF;
+            
+	select cidade into pCidade
+		from endereco
+			where Funcionario_CPF = pCPF
+            
+	if(pCidade = "Recife")
+		then set vt = 22 * 2 precoPassagem;
+	else
+		then set vt = 22 * 4 precoPassagem;
+	end if; -- todo if quando acabar tem que ter um "end if" se nao vai dar red
+    
+    set vt = vt - 0.06 * pSalario; -- se o vt for menor que 6% do pSalario entao o vt sera 0, caso isso nao ocorra retorna-ra o calculo normal do vt
+    
+    if(vt < 0)
+		then return 0.0;
+	else
+		return vt;
+	end if;
+    
+    
+end $$ -- final
+delimiter ;
+
+delimiter $$
+create function calcINSS(salario decimal(7,2)) -- função para desconto do INSS
+	returns decimal(6,2) deterministic
+    begin
+		if(salario <= 1518)
+			then return salario * 0.075;
+		elseif(salario > 1518 and salario <= 2793.88) -- poderia ser usado between tambem para pegar esse intervalo de valores
+			then return salario * 0.09;
+		elseif(salario > 1518 and salario <= 4190.88) -- elseif é a outra forma de condição depois do if e antes do else
+			then return salario * 0.12;
+        elseif(salario > 1518 and salario <= 8157.41) 
+			then return salario * 0.14;
+		else
+			return 8157.41 * 0.14;
+		end if;
+            
+    end $$    
+delimiter ;
+
+delimiter $$
+create function calcIRRF(salario decimal(7,2)) -- função para imposto de renda
+	returns decimal(6,2) deterministic
+    begin
+		if(salario <= 2259.20)
+			then return 0.0;
+		elseif(salario > 2259.20 and salario <= 2826.65) -- poderia ser usado between tambem para pegar esse intervalo de valores
+			then return salario * 0.75;
+		elseif(salario > 2826.65 and salario <= 3751.05) -- elseif é a outra forma de condição depois do if e antes do else
+			then return salario * 0.15;
+        elseif(salario > 3751.05 and salario <= 4664.68) 
+			then return salario * 0.225;
+		else
+			return 8157.41 * 0.225;
+		end if;
+            
+    end $$    
+delimiter ;
+
+select upper(func.nome) "Funcionário",
+	replace(replace(func.cpf, '.', ''), '-', '') "CPF",
+    func.chavePIX "Chave PIX",
+    concat(func.cargaHoraria, 'h') "Carga Horária",
+    concat("R$ ", format(func.salario, 2 , 'de_DE')) "Salário Bruto",
+	concat("R$ ", format(calcValeTransporte(func.cpf), 2 , 'de_DE'))
+        "Vale Transporte",
+	concat("-R$ ", format(calcINSS(func.salario), 2 , 'de_DE'))
+        "INSS",
+	concat("-R$ ", format(calcIRRF(func.salario), 2 , 'de_DE'))
+        "IRRF",
+	concat("R$ ", format(func.salario + calcValeAlimentacao(func.cargaHoraria) +
+    calcAuxSaude(func.dataNasc) + calcValeTransporte(func.cpf) +
+    coalesce(vac.auxCreche, 0) - calcINSS(func.salario) -
+    calcIRRF(func.salario), 2 , 'de_DE'))
+		"Salário Líquido"
+	from funcionario func
+			order by func.nome;
+            
+delimiter $$
+create procedure cadFuncionario()
+	begin
+    end $$
+delimiter ;            
+
+
+
+-- sintaxes novas:
+-- coalesce(nomeexemplo,0) se nomeexemplo for zero ao inves de aparecer null na tabela ira aparecer 0
